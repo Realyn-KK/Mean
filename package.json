@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "deploy:cloudflare": "vite build && npx wrangler deploy",
+    "deploy:cloudflare-pages": "vite build && npx wrangler pages deploy dist --project-name=mogu-mogu-matsuri"
   },
   "dependencies": {
     "@firebase/eslint-plugin-security-rules": "^0.0.2",
