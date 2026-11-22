@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โมกุโมกุ! ทุบตุ่นลุ้นรางวัลเทศกาลญี่ปุ่น (Mogu-Mogu Matsuri)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Mali & Prompt for cute Japanese-Thai aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tone.js for cute arcade sound effects without external URLs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        /* กำหนดฟอนต์หลักสไตล์น่ารักอ่านง่าย */
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(180deg, #FFE8F0 0%, #FFF6E5 55%, #D9F5D6 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-cute {
+            font-family: 'Mali', cursive, sans-serif;
+        }
+
+        /* ลวดลายพื้นหลังสไตล์ญี่ปุ่น (Asanoha / Seigaiha subtle pattern) */
+        .jp-pattern {
+            background-image: radial-gradient(#FF9EBB 1.5px, transparent 1.5px), radial-gradient(#FFD166 1.5px, #FFF9F2 1.5px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+
+        /* ขอบการ์ตูนสไตล์ญี่ปุ่น 3D ปุ่มนูน */
+        .kawaii-card {
+            background: #FFFFFF;
+            border: 4px solid #4A3531;
+            box-shadow: 0 8px 0 #4A3531;
+            border-radius: 28px;
+        }
+
+        .kawaii-btn {
+            border: 3px solid #4A3531;
+            box-shadow: 0 5px 0 #4A3531;
+            transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .kawaii-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #4A3531;
+        }
+
+        .kawaii-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #4A3531;
+        }
+
+        .kawaii-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* แอนิเมชันดอกซากุระร่วง */
+        @keyframes sakuraFall {
+            0% {
+                transform: translateY(-10vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            15% { opacity: 0.9; }
+            85% { opacity: 0.9; }
+            100% {
+                transform: translateY(105vh) translateX(45px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .sakura-petal {
+            position: fixed;
+            top: -10%;
+            pointer-events: none;
+            z-index: 1;
+            animation: sakuraFall linear infinite;
+        }
+
+        /* แอนิเมชันโคมไฟแกว่งเบาๆ */
+        @keyframes lanternSway {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(4deg); }
+        }
+        .lantern-sway {
+            transform-origin: top center;
+            animation: lanternSway 3.5s ease-in-out infinite;
+        }
+
+        /* ระบบหลุมและน้องตุ่น */
+        .mole-hole-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1.05;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+        }
+
+        /* ช่องหน้ากากตัดตัวตุ่นให้มุดลงดินได้เนียน */
+        .mole-mask {
+            position: relative;
+            width: 88%;
+            height: 82%;
+            overflow: hidden;
+            border-bottom-left-radius: 50% 24%;
+            border-bottom-right-radius: 50% 24%;
+            z-index: 10;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        /* ตัวตุ่นและการเคลื่อนที่ขึ้น-ลง */
+        .mole-character {
+            width: 86%;
+            transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform: translateY(105%);
+            transform-origin: bottom center;
+        }
+
+        /* สถานะตุ่นโผล่พร้อมให้ทุบ */
+        .mole-character.up {
+            transform: translateY(6%);
+            animation: moleIdle 1.8s ease-in-out infinite alternate;
+        }
+
+        /* สถานะตุ่นมุดลงไปหยิบของ */
+        .mole-character.hidden-down {
+            transform: translateY(110%) !important;
+            animation: none !important;
+            transition: transform 0.35s cubic-bezier(0.55, 0.085, 0.68, 0.53);
+        }
+
+        /* สถานะตุ่นโดนทุบตกใจ (Bonked) */
+        .mole-character.bonked {
+            transform: translateY(16%) scale(1.08, 0.85) !important;
+            animation: bonkShake 0.35s ease-in-out;
+        }
+
+        /* สถานะตุ่นชูของรางวัล */
+        .mole-character.holding-prize {
+            transform: translateY(2%) !important;
+            animation: prizeBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes moleIdle {
+            0% { transform: translateY(7%) rotate(-1.5deg); }
+            100% { transform: translateY(3%) rotate(1.5deg); }
+        }
+
+        @keyframes bonkShake {
+            0%, 100% { transform: translateY(16%) scale(1.08, 0.85) rotate(0deg); }
+            25% { transform: translateY(16%) scale(1.1, 0.82) rotate(-8deg); }
+            75% { transform: translateY(16%) scale(1.1, 0.82) rotate(8deg); }
+        }
+
+        @keyframes prizeBounce {
+            0% { transform: translateY(90%) scale(0.8); }
+            65% { transform: translateY(-4%) scale(1.05); }
+            100% { transform: translateY(2%) scale(1); }
+        }
+
+        /* ปากหลุมดินด้านหลังและขอบเนินดินด้านหน้า */
+        .hole-back {
+            position: absolute;
+            bottom: 4%;
+            width: 88%;
+            height: 28%;
+            background: #3B231E;
+            border-radius: 50%;
+            border: 3px solid #2A1713;
+            z-index: 5;
+            box-shadow: inset 0 8px 12px rgba(0,0,0,0.65);
+        }
+
+        .hole-front-rim {
+            position: absolute;
+            bottom: 1%;
+            width: 94%;
+            height: 22%;
+            background: linear-gradient(180deg, #9C6644 0%, #7F4F24 100%);
+            border: 3px solid #4A3531;
+            border-radius: 50%;
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 4px 0 #4A3531;
+        }
+
+        /* ค้อนป๊อกเด้งแอนิเมชันตอนทุบ */
+        .hammer-fx {
+            position: absolute;
+            top: -12%;
+            right: -8%;
+            width: 68px;
+            height: 68px;
+            z-index: 30;
+            pointer-events: none;
+            transform-origin: bottom right;
+            animation: hammerSmash 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes hammerSmash {
+            0% { transform: rotate(45deg) scale(0.7); opacity: 0; }
+            30% { transform: rotate(-35deg) scale(1.15); opacity: 1; }
+            70% { transform: rotate(-25deg) scale(1.05); opacity: 1; }
+            100% { transform: rotate(10deg) scale(0.8); opacity: 0; }
+        }
+
+        /* เอฟเฟกต์ดาวและคำว่า ป๊อก! (POKO!) */
+        @keyframes popText {
+            0% { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+            40% { transform: translate(-50%, -22px) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -38px) scale(1); opacity: 0; }
+        }
+
+        .poko-badge {
+            position: absolute;
+            top: 8%;
+            left: 50%;
+            z-index: 35;
+            pointer-events: none;
+            animation: popText 0.65s ease-out forwards;
+        }
+
+        /* ปรับแต่ง Scrollbar ให้น่ารัก */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FFF1F5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF8FAB;
+            border-radius: 10px;
+            border: 2px solid #FFF1F5;
+        }
+    </style>
+</head>
+<body class="jp-pattern text-[#4A3531] relative flex flex-col justify-between">
+
+    <!-- กลีบซากุระร่วงตกแต่งพื้นหลัง -->
+    <div id="sakura-container" aria-hidden="true"></div>
+
+    <!-- แถบตกแต่งด้านบน (เทศกาลญี่ปุ่น Matsuri Banner) -->
+    <header class="w-full relative z-20 pt-3 px-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between bg-white/90 backdrop-blur-sm border-4 border-[#4A3531] rounded-3xl px-4 py-2.5 shadow-[0_5px_0_#4A3531]">
+            <!-- โลโก้และชื่อเกม -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-[#FF758F] border-2 border-[#4A3531] flex items-center justify-center text-white font-bold text-xl shadow-inner">
+                    🐹
+                </div>
+                <div>
+                    <h1 class="font-cute font-bold text-base sm:text-xl text-[#D9385A] leading-tight">
+                        โมกุโมกุ! ทุบตุ่นนำโชค
+                    </h1>
+                    <p class="text-[11px] sm:text-xs text-[#7D5A50] font-medium">
+                        เทศกาลลุ้นรางวัลสุดคิ้วท์ 🌸
+                    </p>
+                </div>
+            </div>
+
+            <!-- ปุ่มควบคุมเสียง & ปุ่มเข้าหน้าแอดมิน -->
+            <div class="flex items-center gap-2">
+                <button id="soundToggleBtn" onclick="toggleSound()" title="เปิด/ปิดเสียงเอฟเฟกต์"
+                    class="kawaii-btn bg-[#FFF3B0] hover:bg-[#FFE66D] text-[#4A3531] p-2 sm:px-3 sm:py-2 rounded-2xl text-sm font-bold flex items-center gap-1">
+                    <span id="soundIcon">🔊</span>
+                    <span class="hidden sm:inline" id="soundLabel">เปิดเสียง</span>
+                </button>
+                <button id="navAdminBtn" onclick="openAdminModal()"
+                    class="kawaii-btn bg-[#E2ECE9] hover:bg-[#CDE0DA] text-[#4A3531] px-3 py-2 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                    <span>🔑</span>
+                    <span>แอดมิน</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- พื้นที่เนื้อหาหลัก -->
+    <main class="flex-grow flex items-center justify-center px-3 py-6 relative z-10">
+
+        <!-- ========================================== -->
+        <!-- 1. หน้าเข้าสู่ระบบผู้เล่น (PLAYER ENTRY VIEW) -->
+        <!-- ========================================== -->
+        <section id="entryView" class="w-full max-w-md transition-all duration-300">
+            <div class="kawaii-card p-6 sm:p-8 relative overflow-hidden bg-gradient-to-b from-white to-[#FFF8FA]">
+                <!-- โคมไฟญี่ปุ่นตกแต่งมุมบน -->
+                <div class="flex justify-between items-start -mt-2 mb-2 pointer-events-none">
+                    <div class="lantern-sway text-2xl sm:text-3xl">🏮</div>
+                    <div class="bg-[#FFEDF2] border-2 border-[#FF8FAB] text-[#D9385A] text-xs font-bold px-3 py-1 rounded-full">
+                        ✨ 1 โค้ด ใช้ได้ 1 ครั้ง ✨
+                    </div>
+                    <div class="lantern-sway text-2xl sm:text-3xl" style="animation-delay: 1s;">🏮</div>
+                </div>
+
+                <!-- มาสคอตน้องตุ่นต้อนรับ -->
+                <div class="flex flex-col items-center text-center mb-5">
+                    <div class="w-24 h-24 sm:w-28 sm:h-28 mb-2 drop-shadow-md">
+                        <!-- SVG น้องตุ่นญี่ปุ่นน่ารัก -->
+                        <svg viewBox="0 0 120 120" class="w-full h-full">
+                            <!-- หู/แก้ม -->
+                            <ellipse cx="60" cy="68" rx="42" ry="44" fill="#9C6644" stroke="#4A3531" stroke-width="4"/>
+                            <!-- ท้องสีครีม -->
+                            <ellipse cx="60" cy="86" rx="26" ry="22" fill="#FDE4CF"/>
+                            <!-- ผ้าคาดหัวเทศกาลญี่ปุ่น (Hachimaki) -->
+                            <path d="M22 46 Q60 36 98 46 L96 56 Q60 46 24 56 Z" fill="#FFFFFF" stroke="#4A3531" stroke-width="3"/>
+                            <circle cx="60" cy="46" r="7" fill="#E63946"/>
+                            <!-- ปมผ้าคาดหัวด้านข้าง -->
+                            <path d="M97 48 L112 40 L108 52 Z" fill="#FFFFFF" stroke="#4A3531" stroke-width="2.5"/>
+                            <path d="M97 52 L114 58 L106 65 Z" fill="#FFFFFF" stroke="#4A3531" stroke-width="2.5"/>
+                            <!-- ตาแป๋ว -->
+                            <circle cx="43" cy="66" r="5.5" fill="#4A3531"/>
+                            <circle cx="41.5" cy="64" r="2" fill="#FFFFFF"/>
+                            <circle cx="77" cy="66" r="5.5" fill="#4A3531"/>
+                            <circle cx="75.5" cy="64" r="2" fill="#FFFFFF"/>
+                            <!-- แก้มแดง -->
+                            <ellipse cx="33" cy="74" rx="6.5" ry="4" fill="#FF8FAB" opacity="0.8"/>
+                            <ellipse cx="87" cy="74" rx="6.5" ry="4" fill="#FF8FAB" opacity="0.8"/>
+                            <!-- จมูกชมพู -->
+                            <ellipse cx="60" cy="72" rx="7" ry="5" fill="#FF758F" stroke="#4A3531" stroke-width="2.5"/>
+                            <!-- ปากยิ้มน่ารัก -->
+                            <path d="M53 80 Q60 86 67 80" fill="none" stroke="#4A3531" stroke-width="3" stroke-linecap="round"/>
+                            <!-- มือเล็กๆ โบกทักทาย -->
+                            <ellipse cx="26" cy="85" rx="9" ry="7" fill="#DDB892" stroke="#4A3531" stroke-width="3" transform="rotate(-20 26 85)"/>
+                            <ellipse cx="94" cy="85" rx="9" ry="7" fill="#DDB892" stroke="#4A3531" stroke-width="3" transform="rotate(20 94 85)"/>
+                        </svg>
+                    </div>
+                    <h2 class="font-cute font-bold text-2xl sm:text-3xl text-[#4A3531]">
+                        พร้อมลุ้นรางวัลหรือยัง?
+                    </h2>
+                    <p class="text-sm text-[#7D5A50] mt-1">
+                        กรอกชื่อเล่นและรหัส 4 หลักจากทางร้านเพื่อเริ่มทุบตุ่น!
+                    </p>
+                </div>
+
+                <!-- ฟอร์มกรอกข้อมูล -->
+                <form id="playerLoginForm" onsubmit="handlePlayerStart(event)" class="space-y-4">
+                    <div>
+                        <label for="playerNameInput" class="block text-sm font-bold text-[#4A3531] mb-1.5">
+                            🌸 ชื่อเล่นของคุณ <span class="text-[#E63946]">*</span>
+                        </label>
+                        <input type="text" id="playerNameInput" maxlength="25" placeholder="เช่น น้องโมจิ, พี่ซากุระ..."
+                            class="w-full px-4 py-3 rounded-2xl border-3 border-[#4A3531] bg-[#FFFDF9] text-[#4A3531] font-medium focus:outline-none focus:ring-4 focus:ring-[#FFCCD5] transition"
+                            required>
+                    </div>
+
+                    <div>
+                        <label for="unlockCodeInput" class="block text-sm font-bold text-[#4A3531] mb-1.5">
+                            🎟️ รหัสปลดล็อก 4 หลัก <span class="text-[#E63946]">*</span>
+                        </label>
+                        <input type="text" id="unlockCodeInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="เช่น 8888"
+                            class="w-full px-4 py-3 rounded-2xl border-3 border-[#4A3531] bg-[#FFFDF9] text-center text-2xl tracking-[0.4em] font-bold text-[#D9385A] focus:outline-none focus:ring-4 focus:ring-[#FFCCD5] transition"
+                            required>
+                    </div>
+
+                    <!-- กล่องแสดงแจ้งเตือนข้อผิดพลาด -->
+                    <div id="entryErrorBox" class="hidden bg-[#FFE5EC] border-2 border-[#E63946] text-[#B51738] text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-2xl text-center">
+                    </div>
+
+                    <button type="submit"
+                        class="w-full kawaii-btn bg-gradient-to-r from-[#FF758F] to-[#FF8FA3] hover:from-[#FF5C7C] hover:to-[#FF758F] text-white font-cute font-bold text-lg sm:text-xl py-3.5 rounded-2xl mt-2 flex items-center justify-center gap-2">
+                        <span>🔨</span>
+                        <span>ปลดล็อกเข้าสู่สนามทุบตุ่น!</span>
+                    </button>
+                </form>
+
+                <!-- คำแนะนำโค้ดทดลองสำหรับผู้ใช้ใหม่ -->
+                <div class="mt-5 pt-4 border-t-2 border-dashed border-[#FFD6E0] text-center">
+                    <p class="text-xs text-[#8C6D65]">
+                        💡 ทดลองเล่นทันทีใช้โค้ดตัวอย่าง: <button type="button" onclick="fillDemoCode('8888')" class="font-bold text-[#D9385A] underline hover:text-[#A4133C]">8888</button> (1 โค้ดใช้ได้ 1 ครั้ง • สร้างใหม่ได้ในเมนูแอดมิน)
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. หน้าสนามเล่นเกมทุบตุ่น 9 หลุม (GAME VIEW)  -->
+        <!-- ========================================== -->
+        <section id="gameView" class="hidden w-full max-w-2xl transition-all duration-300">
+            <!-- แถบสถานะผู้เล่นและจำนวนสิทธิ์ -->
+            <div class="kawaii-card px-4 py-3 sm:px-6 sm:py-4 mb-5 bg-white/95 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-[#BDE0FE] border-3 border-[#4A3531] flex items-center justify-center text-xl">
+                        🦊
+                    </div>
+                    <div>
+                        <div class="text-xs text-[#7D5A50] font-semibold">ผู้เล่น</div>
+                        <div id="activePlayerName" class="font-cute font-bold text-lg text-[#4A3531] leading-tight">
+                            -
+                        </div>
+                    </div>
+                </div>
+
+                <!-- แสดงโค้ดและสิทธิ์คงเหลือ -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="bg-[#FFF3B0] border-2 border-[#4A3531] px-3 py-1.5 rounded-2xl text-center">
+                        <div class="text-[10px] font-bold text-[#7D5A50]">โค้ด</div>
+                        <div id="activeCodeDisplay" class="font-bold text-sm text-[#D9385A]">----</div>
+                    </div>
+
+                    <div class="bg-[#D8F3DC] border-2 border-[#4A3531] px-3.5 py-1.5 rounded-2xl text-center">
+                        <div class="text-[10px] font-bold text-[#2D6A4F]">สิทธิ์คงเหลือ</div>
+                        <div id="remainingPlaysDisplay" class="font-cute font-bold text-base sm:text-lg text-[#1B4332]">
+                            0 / 0
+                        </div>
+                    </div>
+
+                    <button onclick="exitToEntry()" title="ออกจากรอบนี้"
+                        class="kawaii-btn bg-[#F8EDEB] hover:bg-[#FCD5CE] text-[#4A3531] px-3 py-2 rounded-2xl text-xs font-bold">
+                        ออก
+                    </button>
+                </div>
+            </div>
+
+            <!-- ป้ายคำแนะนำด้านบนกระดาน -->
+            <div class="text-center mb-4">
+                <span id="gameInstructionBadge" class="inline-block bg-[#FF758F] text-white border-3 border-[#4A3531] shadow-[0_4px_0_#4A3531] px-5 py-1.5 rounded-full font-cute font-bold text-sm sm:text-base">
+                    🔨 จิ้มเลือกทุบน้องตุ่น 1 ตัวเพื่อรับของรางวัลเลย!
+                </span>
+            </div>
+
+            <!-- สนามหญ้าญี่ปุ่น 9 หลุม (3x3 Grid) -->
+            <div class="kawaii-card p-4 sm:p-7 bg-gradient-to-b from-[#B7E4C7] via-[#95D5B2] to-[#74C69D] relative">
+                <!-- ของตกแต่งขอบสนามหญ้า -->
+                <div class="flex justify-between text-lg sm:text-xl px-2 mb-1 pointer-events-none opacity-90">
+                    <span>🌷🌿</span>
+                    <span>🌼🍀🌼</span>
+                    <span>🌿🌸</span>
+                </div>
+
+                <!-- ตารางหลุมตุ่น 9 หลุม -->
+                <div id="moleGrid" class="grid grid-cols-3 gap-2 sm:gap-5 max-w-lg mx-auto">
+                    <!-- หลุมทั้ง 9 จะถูกสร้างด้วย JavaScript -->
+                </div>
+
+                <div class="flex justify-between text-lg sm:text-xl px-2 mt-2 pointer-events-none opacity-90">
+                    <span>🍄🌱</span>
+                    <span>🐾✨🐾</span>
+                    <span>🌱🍄</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer เล็กๆ ด้านล่าง -->
+    <footer class="w-full text-center py-3 px-4 text-xs text-[#7D5A50] relative z-10">
+        🌸 กิจกรรมทุบตุ่นลุ้นรางวัลสุดพิเศษ • เล่นง่าย ลุ้นสนุกทุกสิทธิ์ 🌸
+    </footer>
+
+    <!-- ============================================================ -->
+    <!-- MODAL 1: หน้าต่างแสดงรางวัลที่ได้รับ (PRIZE RESULT POPUP)     -->
+    <!-- ============================================================ -->
+    <div id="prizeModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="kawaii-card w-full max-w-md p-6 sm:p-7 bg-gradient-to-b from-[#FFFDF7] to-[#FFF0F5] text-center relative animate-[bounce_0.4s_ease-out]">
+            <!-- ริบบิ้นด้านบน -->
+            <div class="inline-block bg-[#FFD166] border-3 border-[#4A3531] px-4 py-1 rounded-full text-xs sm:text-sm font-bold text-[#4A3531] mb-3 shadow-xs">
+                🎉 ยินดีด้วย! น้องตุ่นหยิบของรางวัลมาให้แล้ว 🎉
+            </div>
+
+            <!-- ไอคอนของรางวัลขนาดใหญ่ -->
+            <div id="prizeVisualIcon" class="w-24 h-24 mx-auto my-2 rounded-3xl bg-white border-4 border-[#4A3531] flex items-center justify-center text-5xl shadow-[0_5px_0_#4A3531]">
+                🍱
+            </div>
+
+            <!-- ชื่อรางวัล -->
+            <h3 id="prizeTitleText" class="font-cute font-bold text-2xl sm:text-3xl text-[#D9385A] mt-3">
+                แจกอาหารฟรี!
+            </h3>
+            <p id="prizeSubText" class="text-sm text-[#7D5A50] mt-1">
+                คูปองรับประทานอาหารฟรี 1 เมนูที่ร่วมรายการ
+            </p>
+
+            <!-- บัตรยืนยันสิทธิ์สำหรับแคปหน้าจอ -->
+            <div class="mt-4 bg-white border-3 border-dashed border-[#FF8FAB] rounded-2xl p-4 text-left space-y-1.5">
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-[#7D5A50]">ผู้โชคดี:</span>
+                    <span id="receiptPlayerName" class="font-bold text-[#4A3531]">-</span>
+                </div>
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-[#7D5A50]">รหัสโค้ดที่ใช้:</span>
+                    <span id="receiptCodeUsed" class="font-bold text-[#D9385A]">-</span>
+                </div>
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-[#7D5A50]">เลขอ้างอิงรางวัล:</span>
+                    <span id="receiptRefId" class="font-mono font-bold text-[#2D6A4F]">-</span>
+                </div>
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-[#7D5A50]">วัน-เวลา:</span>
+                    <span id="receiptTimestamp" class="font-medium text-[#4A3531]">-</span>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-[#8C6D65] mt-2.5">
+                📸 แคปหน้าจอนี้เพื่อแสดงให้พนักงานหน้าร้านรับสิทธิ์ได้เลย!
+            </p>
+
+            <!-- ปุ่มดำเนินการต่อ -->
+            <div class="mt-5 flex flex-col sm:flex-row gap-2.5">
+                <button id="playNextBtn" onclick="continueNextPlay()"
+                    class="flex-1 kawaii-btn bg-[#52B788] hover:bg-[#40916C] text-white font-cute font-bold py-3 px-4 rounded-2xl text-base">
+                    🔨 ทุบต่อ (เหลืออีก 1 สิทธิ์)
+                </button>
+                <button id="finishAllBtn" onclick="finishAndReturn()"
+                    class="flex-1 kawaii-btn bg-[#FF758F] hover:bg-[#FF5C7C] text-white font-cute font-bold py-3 px-4 rounded-2xl text-base">
+                    ✨ เสร็จสิ้น / กลับหน้าแรก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL 2: ระบบหลังบ้านแอดมิน (ADMIN LOGIN & DASHBOARD)         -->
+    <!-- ============================================================ -->
+    <div id="adminModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div class="kawaii-card w-full max-w-3xl bg-[#FFFDF9] p-5 sm:p-7 my-auto max-h-[92vh] flex flex-col">
+            
+            <!-- ส่วนหัว Modal แอดมิน -->
+            <div class="flex items-center justify-between pb-3 border-b-3 border-[#FFE5EC]">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">👑</span>
+                    <h3 class="font-cute font-bold text-xl sm:text-2xl text-[#4A3531]">
+                        ระบบจัดการแอดมิน (Admin Panel)
+                    </h3>
+                </div>
+                <button onclick="closeAdminModal()"
+                    class="kawaii-btn bg-[#FFE5EC] hover:bg-[#FFCCD5] text-[#D9385A] w-9 h-9 rounded-xl font-bold flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <!-- 2A. หน้าล็อกอินแอดมิน -->
+            <div id="adminLoginSection" class="py-8 max-w-sm mx-auto w-full text-center">
+                <div class="text-4xl mb-2">🔐</div>
+                <h4 class="font-cute font-bold text-lg text-[#4A3531] mb-1">เข้าสู่ระบบผู้ดูแลร้าน</h4>
+                <p class="text-xs text-[#7D5A50] mb-4">กรุณากรอกรหัสผ่านแอดมินเพื่อสร้างโค้ดและดูประวัติรางวัล</p>
+
+                <form onsubmit="handleAdminLogin(event)" class="space-y-3">
+                    <input type="password" id="adminPasswordInput" maxlength="10" placeholder="รหัสผ่านแอดมิน"
+                        class="w-full px-4 py-2.5 rounded-2xl border-3 border-[#4A3531] text-center text-lg font-bold focus:outline-none focus:ring-4 focus:ring-[#BDE0FE]">
+                    <div id="adminLoginError" class="hidden text-xs font-bold text-[#E63946]">
+                        รหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง!
+                    </div>
+                    <button type="submit"
+                        class="w-full kawaii-btn bg-[#4EA8DE] hover:bg-[#3A86FF] text-white font-cute font-bold py-2.5 rounded-2xl">
+                        เข้าสู่ระบบแอดมิน
+                    </button>
+                </form>
+                <p class="text-[11px] text-[#8C6D65] mt-3">
+                    (รหัสผ่านเริ่มต้นสำหรับทดสอบ: <span class="font-bold text-[#4A3531]">1234</span>)
+                </p>
+            </div>
+
+            <!-- 2B. แดชบอร์ดแอดมินหลัก -->
+            <div id="adminDashboardSection" class="hidden flex-1 overflow-y-auto pt-4 space-y-5 pr-1">
+                
+                <!-- ส่วนสร้างโค้ด 4 หลักใหม่ -->
+                <div class="bg-[#FFF0F5] border-3 border-[#FF8FAB] rounded-2xl p-4">
+                    <h4 class="font-cute font-bold text-base sm:text-lg text-[#D9385A] mb-3 flex items-center gap-1.5">
+                        <span>🎟️</span> สร้างโค้ดปลดล็อก 4 หลักใหม่ (1 โค้ดใช้ได้ 1 ครั้ง)
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                        <!-- ช่องกรอก/สุ่มโค้ด 4 หลัก -->
+                        <div class="sm:col-span-5">
+                            <label class="block text-xs font-bold text-[#4A3531] mb-1">รหัส 4 หลัก (ตัวเลข)</label>
+                            <div class="flex gap-1.5">
+                                <input type="text" id="newCodeInput" maxlength="4" inputmode="numeric" placeholder="เช่น 4592"
+                                    class="w-full px-3 py-2 rounded-xl border-2 border-[#4A3531] bg-white text-center font-bold text-lg tracking-widest text-[#D9385A]">
+                                <button type="button" onclick="generateRandom4DigitCode()" title="สุ่มรหัส 4 หลัก"
+                                    class="kawaii-btn bg-[#FFD166] hover:bg-[#FFC300] text-[#4A3531] px-3 py-2 rounded-xl text-xs font-bold shrink-0">
+                                    🎲 สุ่ม
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ระบุจำนวนสิทธิ์ -->
+                        <div class="sm:col-span-4">
+                            <label class="block text-xs font-bold text-[#4A3531] mb-1">จำนวนสิทธิ์ (ตัวตุ่น)</label>
+                            <input type="number" id="newCodeUsesInput" min="1" max="99" value="1"
+                                class="w-full px-3 py-2 rounded-xl border-2 border-[#4A3531] bg-white text-center font-bold text-lg text-[#4A3531]">
+                        </div>
+
+                        <!-- ปุ่มบันทึกสร้างโค้ด -->
+                        <div class="sm:col-span-3">
+                            <button type="button" onclick="createNewCode()"
+                                class="w-full kawaii-btn bg-[#52B788] hover:bg-[#40916C] text-white font-bold py-2.5 px-3 rounded-xl text-sm">
+                                + สร้างโค้ด
+                            </button>
+                        </div>
+                    </div>
+                    <div id="adminToastMsg" class="hidden mt-2 text-xs font-bold text-[#1B4332] bg-[#D8F3DC] px-3 py-1.5 rounded-xl">
+                    </div>
+                </div>
+
+                <!-- ส่วนตั้งค่าอัตราการออกรางวัล (Prize Rate Settings) -->
+                <div class="bg-[#FFF9E6] border-3 border-[#FFD166] rounded-2xl p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <h4 class="font-cute font-bold text-base sm:text-lg text-[#4A3531] flex items-center gap-1.5">
+                            <span>🎯</span> ตั้งค่าเรทออกรางวัล (เฉพาะแอดมิน)
+                        </h4>
+                        <button type="button" onclick="resetDefaultRates()"
+                            class="text-xs font-bold text-[#D9385A] hover:underline">
+                            รีเซ็ตค่าเริ่มต้น (25% / 75%)
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs sm:text-sm font-bold mb-1.5">
+                                <span class="text-[#D9385A]">🍱 แจกอาหารฟรี: <span id="freeFoodRateLabel">25</span>%</span>
+                                <span class="text-[#1982C4]">🎟️ ส่วนลด 50%: <span id="discountRateLabel">75</span>%</span>
+                            </div>
+                            <input type="range" id="freeFoodRateSlider" min="0" max="100" step="5" value="25"
+                                oninput="previewPrizeRate(this.value)"
+                                class="w-full accent-[#FF758F] cursor-pointer h-2.5 bg-[#FFE5EC] rounded-lg">
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                            <p class="text-[11px] text-[#7D5A50]">
+                                * ใช้ระบบสุ่มความน่าจะเป็นมาตรฐาน (Crypto Random) ปรับเปลี่ยนได้ตลอดเวลา
+                            </p>
+                            <button type="button" onclick="savePrizeRateSettings()"
+                                class="kawaii-btn bg-[#FFD166] hover:bg-[#FFC300] text-[#4A3531] font-bold py-2 px-4 rounded-xl text-xs sm:text-sm shrink-0">
+                                💾 บันทึกเรทรางวัล
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- แถบเลือกดูรายการโค้ด หรือ ประวัติผู้รับรางวัล -->
+                <div class="flex gap-2 border-b-2 border-[#E2ECE9] pb-2">
+                    <button id="tabCodesBtn" onclick="switchAdminTab('codes')"
+                        class="px-4 py-1.5 rounded-xl font-bold text-sm bg-[#4A3531] text-white transition">
+                        📋 รายการโค้ดทั้งหมด (<span id="codeCountBadge">0</span>)
+                    </button>
+                    <button id="tabLogsBtn" onclick="switchAdminTab('logs')"
+                        class="px-4 py-1.5 rounded-xl font-bold text-sm bg-[#F8EDEB] text-[#4A3531] hover:bg-[#FCD5CE] transition">
+                        🏆 ประวัติผู้ได้รับรางวัล (<span id="logCountBadge">0</span>)
+                    </button>
+                </div>
+
+                <!-- ตารางรายการโค้ด (Codes List) -->
+                <div id="adminCodesTab" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-[#FFE5EC] text-[#4A3531] border-b-2 border-[#4A3531]">
+                                <th class="py-2.5 px-3 rounded-tl-xl">รหัสโค้ด</th>
+                                <th class="py-2.5 px-3 text-center">สิทธิ์ในรอบ (ทุบไป/ทั้งหมด)</th>
+                                <th class="py-2.5 px-3 text-center">สถานะโค้ด (1 ครั้ง)</th>
+                                <th class="py-2.5 px-3 text-right rounded-tr-xl">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCodesTableBody" class="divide-y divide-[#FFE5EC]">
+                            <!-- รายการโค้ดแสดงที่นี่ -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ตารางประวัติผู้ได้รับรางวัล (Winner Logs) -->
+                <div id="adminLogsTab" class="hidden space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span id="adminRateSummaryText" class="text-xs text-[#7D5A50]">เรทปัจจุบัน: อาหารฟรี 25% | ส่วนลด 50% (75%)</span>
+                        <button onclick="clearWinnerLogs()" class="text-xs text-[#E63946] hover:underline font-bold">
+                            🗑️ ล้างประวัติรางวัล
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="bg-[#E2ECE9] text-[#4A3531] border-b-2 border-[#4A3531]">
+                                    <th class="py-2.5 px-3 rounded-tl-xl">เวลา</th>
+                                    <th class="py-2.5 px-3">ชื่อผู้เล่น</th>
+                                    <th class="py-2.5 px-3 text-center">โค้ด</th>
+                                    <th class="py-2.5 px-3 rounded-tr-xl">ของรางวัลที่ได้</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLogsTableBody" class="divide-y divide-[#E2ECE9]">
+                                <!-- ประวัติรางวัลแสดงที่นี่ -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript ควบคุมการทำงานทั้งหมด -->
+    <script>
+        /**
+         * ============================================================================
+         * 1. การจัดการข้อมูลและสถานะระบบ (State & LocalStorage Persistence)
+         * ============================================================================
+         */
+        const STORAGE_KEYS = {
+            CODES: 'mogumogu_jp_codes_v1',
+            LOGS: 'mogumogu_jp_logs_v1',
+            RATES: 'mogumogu_jp_rates_v1'
+        };
+
+        const DEFAULT_FREE_FOOD_RATE = 25; // ค่าเริ่มต้น: อาหารฟรี 25%, ส่วนลด 50% = 75%
+        const ADMIN_PASSWORD = '1234';
+
+        let currentSession = {
+            playerName: '',
+            code: '',
+            totalUses: 0,
+            usedCount: 0,
+            isLocked: false
+        };
+
+        let isAdminAuthenticated = false;
+        let soundEnabled = true;
+
+        // พาเลตต์สีสันสดใสน่ารักสไตล์ญี่ปุ่นสำหรับน้องตุ่นทั้ง 9 หลุม
+        const MOLE_COLOR_PALETTES = [
+            { name: 'Sakura Pink', body: '#FF8FAB', belly: '#FFE5EC', band: '#FFFFFF', dot: '#E63946', paws: '#FFB3C6' },
+            { name: 'Matcha Green', body: '#74C69D', belly: '#D8F3DC', band: '#FFF3B0', dot: '#E63946', paws: '#95D5B2' },
+            { name: 'Yuzu Yellow', body: '#FFD166', belly: '#FFF8D6', band: '#FFFFFF', dot: '#FF6B6B', paws: '#FFE08A' },
+            { name: 'Ramune Blue', body: '#72EFDD', belly: '#E0FBFC', band: '#FFFFFF', dot: '#3A86FF', paws: '#9BF6FF' },
+            { name: 'Taro Purple', body: '#BDB2FF', belly: '#F3F0FF', band: '#FFF3B0', dot: '#FF758F', paws: '#D8D2FF' },
+            { name: 'Peach Coral', body: '#FF9F68', belly: '#FFE8D6', band: '#FFFFFF', dot: '#D9385A', paws: '#FFBE98' },
+            { name: 'Caramel Mocha', body: '#9C6644', belly: '#FDE4CF', band: '#FFFFFF', dot: '#E63946', paws: '#DDB892' },
+            { name: 'Sky Soda', body: '#8ECAE6', belly: '#E8F6FC', band: '#FFF3B0', dot: '#FB8500', paws: '#B8E0F2' },
+            { name: 'Cream Mochi', body: '#F4A261', belly: '#FFFDF7', band: '#FFCCD5', dot: '#E63946', paws: '#F8C291' }
+        ];
+
+        let holeMoleColors = [];
+
+        function assignRandomMoleColors() {
+            const shuffled = [...MOLE_COLOR_PALETTES].sort(() => Math.random() - 0.5);
+            holeMoleColors = shuffled;
+        }
+
+        function initStorage() {
+            try {
+                if (!localStorage.getItem(STORAGE_KEYS.CODES)) {
+                    const initialCodes = [
+                        {
+                            code: '8888',
+                            maxUses: 3,
+                            usedCount: 0,
+                            redeemed: false,
+                            redeemedBy: '',
+                            createdAt: new Date().toLocaleString('th-TH')
+                        }
+                    ];
+                    localStorage.setItem(STORAGE_KEYS.CODES, JSON.stringify(initialCodes));
+                }
+
+                if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
+                    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem(STORAGE_KEYS.RATES)) {
+                    localStorage.setItem(STORAGE_KEYS.RATES, JSON.stringify({
+                        freeFoodRate: DEFAULT_FREE_FOOD_RATE
+                    }));
+                }
+            } catch (err) {
+                console.error('LocalStorage Init Error:', err);
+            }
+        }
+
+        function getCodes() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.CODES)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveCodes(codes) {
+            localStorage.setItem(STORAGE_KEYS.CODES, JSON.stringify(codes));
+        }
+
+        function getLogs() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEYS.LOGS)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveLogs(logs) {
+            localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs));
+        }
+
+        function getPrizeRates() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.RATES));
+                const freeFood = (parsed && typeof parsed.freeFoodRate === 'number')
+                    ? Math.min(100, Math.max(0, parsed.freeFoodRate))
+                    : DEFAULT_FREE_FOOD_RATE;
+                return {
+                    freeFoodRate: freeFood,
+                    discountRate: 100 - freeFood
+                };
+            } catch {
+                return { freeFoodRate: DEFAULT_FREE_FOOD_RATE, discountRate: 100 - DEFAULT_FREE_FOOD_RATE };
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 2. ระบบเสียงเอฟเฟกต์ (Tone.js Synthesizer - ไม่ใช้ไฟล์เสียงภายนอก)
+         * ============================================================================
+         */
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('soundLabel').textContent = soundEnabled ? 'เปิดเสียง' : 'ปิดเสียง';
+            if (soundEnabled) playSoundEffect('click');
+        }
+
+        function playSoundEffect(type) {
+            if (!soundEnabled || typeof Tone === 'undefined') return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                const synth = new Tone.Synth({
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.12, sustain: 0.05, release: 0.15 }
+                }).toDestination();
+
+                const now = Tone.now();
+                if (type === 'click') {
+                    synth.triggerAttackRelease('C5', '32n', now);
+                } else if (type === 'bonk') {
+                    synth.triggerAttackRelease('G3', '16n', now);
+                    synth.triggerAttackRelease('C3', '16n', now + 0.06);
+                } else if (type === 'pop') {
+                    synth.triggerAttackRelease('E5', '32n', now);
+                    synth.triggerAttackRelease('A5', '16n', now + 0.07);
+                } else if (type === 'win') {
+                    synth.triggerAttackRelease('C5', '16n', now);
+                    synth.triggerAttackRelease('E5', '16n', now + 0.09);
+                    synth.triggerAttackRelease('G5', '16n', now + 0.18);
+                    synth.triggerAttackRelease('C6', '8n', now + 0.27);
+                } else if (type === 'error') {
+                    synth.triggerAttackRelease('Eb3', '16n', now);
+                }
+            } catch (e) {
+                console.warn('Audio playback skipped:', e);
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 3. ระบบตกแต่งกลีบซากุระร่วงบนหน้าจอ
+         * ============================================================================
+         */
+        function createSakuraPetals() {
+            const container = document.getElementById('sakura-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const petals = ['🌸', '💮', '🍃'];
+            for (let i = 0; i < 14; i++) {
+                const el = document.createElement('div');
+                el.className = 'sakura-petal text-base sm:text-xl opacity-75';
+                el.textContent = petals[i % petals.length];
+                el.style.left = `${Math.random() * 100}%`;
+                el.style.animationDuration = `${8 + Math.random() * 9}s`;
+                el.style.animationDelay = `${Math.random() * 6}s`;
+                container.appendChild(el);
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 4. ระบบลงทะเบียนผู้เล่นและปลดล็อกโค้ด (1 โค้ดใช้ได้ 1 ครั้ง)
+         * ============================================================================
+         */
+        function fillDemoCode(code) {
+            document.getElementById('unlockCodeInput').value = code;
+            const nameInput = document.getElementById('playerNameInput');
+            if (!nameInput.value.trim()) {
+                nameInput.focus();
+            }
+            playSoundEffect('click');
+        }
+
+        function showEntryError(msg) {
+            const box = document.getElementById('entryErrorBox');
+            box.textContent = msg;
+            box.classList.remove('hidden');
+            playSoundEffect('error');
+        }
+
+        function handlePlayerStart(event) {
+            event.preventDefault();
+            const errorBox = document.getElementById('entryErrorBox');
+            errorBox.classList.add('hidden');
+
+            const playerName = document.getElementById('playerNameInput').value.trim();
+            const codeInput = document.getElementById('unlockCodeInput').value.trim();
+
+            if (!playerName) {
+                showEntryError('⚠️ กรุณากรอกชื่อเล่นก่อนเข้าเล่นนะ!');
+                return;
+            }
+            if (!/^\d{4}$/.test(codeInput)) {
+                showEntryError('⚠️ กรุณากรอกรหัสปลดล็อกเป็นตัวเลข 4 หลัก!');
+                return;
+            }
+
+            const codes = getCodes();
+            const codeIndex = codes.findIndex(c => c.code === codeInput);
+
+            if (codeIndex === -1) {
+                showEntryError('❌ ไม่พบรหัสโค้ดนี้ในระบบ กรุณาตรวจสอบกับพนักงานอีกครั้ง');
+                return;
+            }
+
+            const targetCode = codes[codeIndex];
+            const isAlreadyUsed = targetCode.redeemed === true || targetCode.usedCount >= targetCode.maxUses;
+            if (isAlreadyUsed) {
+                const usedByText = targetCode.redeemedBy ? ` (โดยคุณ ${targetCode.redeemedBy})` : '';
+                showEntryError(`🚫 รหัสโค้ด ${codeInput} นี้ถูกใช้งานไปแล้ว${usedByText} 1 โค้ดใช้ได้ 1 ครั้งเท่านั้น!`);
+                return;
+            }
+
+            // ล็อกสถานะโค้ดเป็น "ถูกใช้แล้ว" ทันที (1 โค้ดใช้ได้ 1 ครั้ง)
+            targetCode.redeemed = true;
+            targetCode.redeemedBy = playerName;
+            targetCode.redeemedAt = new Date().toLocaleString('th-TH');
+            saveCodes(codes);
+
+            currentSession = {
+                playerName: playerName,
+                code: targetCode.code,
+                totalUses: targetCode.maxUses,
+                usedCount: targetCode.usedCount,
+                isLocked: false
+            };
+
+            playSoundEffect('pop');
+            switchToGameView();
+        }
+
+        function switchToGameView() {
+            document.getElementById('entryView').classList.add('hidden');
+            document.getElementById('gameView').classList.remove('hidden');
+
+            document.getElementById('activePlayerName').textContent = currentSession.playerName;
+            document.getElementById('activeCodeDisplay').textContent = currentSession.code;
+            updateRemainingDisplay();
+            renderMoleBoard();
+        }
+
+        function updateRemainingDisplay() {
+            const left = Math.max(0, currentSession.totalUses - currentSession.usedCount);
+            document.getElementById('remainingPlaysDisplay').textContent = `${left} / ${currentSession.totalUses}`;
+            const badge = document.getElementById('gameInstructionBadge');
+            if (left > 0) {
+                badge.textContent = `🔨 จิ้มเลือกทุบน้องตุ่น 1 ตัวเพื่อรับของรางวัลเลย! (เหลือ ${left} สิทธิ์)`;
+            } else {
+                badge.textContent = '🎉 ใช้สิทธิ์ครบตามจำนวนแล้ว ขอบคุณที่ร่วมสนุกนะ!';
+            }
+        }
+
+        function exitToEntry() {
+            playSoundEffect('click');
+            document.getElementById('gameView').classList.add('hidden');
+            document.getElementById('entryView').classList.remove('hidden');
+            document.getElementById('unlockCodeInput').value = '';
+            document.getElementById('entryErrorBox').classList.add('hidden');
+        }
+
+        /**
+         * ============================================================================
+         * 5. ระบบกระดานหลุมตุ่น 9 หลุม & แอนิเมชันการทุบหยิบของรางวัล
+         * ============================================================================
+         */
+        function getMoleSVG(state = 'normal', prizeIcon = '🎁', colorIndex = 0) {
+            const palette = holeMoleColors[colorIndex] || MOLE_COLOR_PALETTES[colorIndex % MOLE_COLOR_PALETTES.length];
+            const { body, belly, band, dot, paws } = palette;
+
+            if (state === 'bonked') {
+                return `
+                <svg viewBox="0 0 120 125" class="w-full h-full drop-shadow-md">
+                    <ellipse cx="60" cy="74" rx="42" ry="46" fill="${body}" stroke="#4A3531" stroke-width="4"/>
+                    <ellipse cx="60" cy="94" rx="26" ry="22" fill="${belly}"/>
+                    <path d="M22 50 Q60 40 98 50 L96 60 Q60 50 24 60 Z" fill="${band}" stroke="#4A3531" stroke-width="3"/>
+                    <circle cx="60" cy="50" r="7" fill="${dot}"/>
+                    <path d="M36 66 L48 74 M48 66 L36 74" stroke="#4A3531" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M72 66 L84 74 M84 66 L72 74" stroke="#4A3531" stroke-width="3.5" stroke-linecap="round"/>
+                    <ellipse cx="60" cy="78" rx="7" ry="5" fill="#FF758F" stroke="#4A3531" stroke-width="2.5"/>
+                    <circle cx="60" cy="90" r="6" fill="#E63946" stroke="#4A3531" stroke-width="2.5"/>
+                    <text x="20" y="34" font-size="18">💫</text>
+                    <text x="86" y="34" font-size="18">⭐</text>
+                </svg>`;
+            }
+
+            if (state === 'prize') {
+                return `
+                <svg viewBox="0 0 120 125" class="w-full h-full drop-shadow-md">
+                    <ellipse cx="60" cy="74" rx="42" ry="46" fill="${body}" stroke="#4A3531" stroke-width="4"/>
+                    <ellipse cx="60" cy="94" rx="26" ry="22" fill="${belly}"/>
+                    <path d="M22 48 Q60 38 98 48 L96 58 Q60 48 24 58 Z" fill="${band}" stroke="#4A3531" stroke-width="3"/>
+                    <circle cx="60" cy="48" r="7" fill="${dot}"/>
+                    <path d="M36 69 Q43 61 50 69" fill="none" stroke="#4A3531" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M70 69 Q77 61 84 69" fill="none" stroke="#4A3531" stroke-width="3.5" stroke-linecap="round"/>
+                    <ellipse cx="32" cy="76" rx="7" ry="4.5" fill="#FF758F" opacity="0.85"/>
+                    <ellipse cx="88" cy="76" rx="7" ry="4.5" fill="#FF758F" opacity="0.85"/>
+                    <ellipse cx="60" cy="74" rx="7" ry="5" fill="#FF758F" stroke="#4A3531" stroke-width="2.5"/>
+                    <path d="M52 82 Q60 90 68 82" fill="none" stroke="#4A3531" stroke-width="3" stroke-linecap="round"/>
+                    <rect x="36" y="84" width="48" height="34" rx="10" fill="#FFF3B0" stroke="#4A3531" stroke-width="3"/>
+                    <text x="60" y="108" text-anchor="middle" font-size="22">${prizeIcon}</text>
+                    <ellipse cx="33" cy="98" rx="8" ry="6" fill="${paws}" stroke="#4A3531" stroke-width="3"/>
+                    <ellipse cx="87" cy="98" rx="8" ry="6" fill="${paws}" stroke="#4A3531" stroke-width="3"/>
+                </svg>`;
+            }
+
+            return `
+            <svg viewBox="0 0 120 125" class="w-full h-full drop-shadow-md">
+                <ellipse cx="60" cy="74" rx="42" ry="46" fill="${body}" stroke="#4A3531" stroke-width="4"/>
+                <ellipse cx="60" cy="94" rx="26" ry="22" fill="${belly}"/>
+                <path d="M22 50 Q60 40 98 50 L96 60 Q60 50 24 60 Z" fill="${band}" stroke="#4A3531" stroke-width="3"/>
+                <circle cx="60" cy="50" r="7" fill="${dot}"/>
+                <path d="M97 52 L111 45 L107 56 Z" fill="${band}" stroke="#4A3531" stroke-width="2.5"/>
+                <circle cx="43" cy="70" r="5.5" fill="#4A3531"/>
+                <circle cx="41.5" cy="68" r="2" fill="#FFFFFF"/>
+                <circle cx="77" cy="70" r="5.5" fill="#4A3531"/>
+                <circle cx="75.5" cy="68" r="2" fill="#FFFFFF"/>
+                <ellipse cx="33" cy="78" rx="6.5" ry="4" fill="#FF8FAB" opacity="0.8"/>
+                <ellipse cx="87" cy="78" rx="6.5" ry="4" fill="#FF8FAB" opacity="0.8"/>
+                <ellipse cx="60" cy="76" rx="7" ry="5" fill="#FF758F" stroke="#4A3531" stroke-width="2.5"/>
+                <path d="M53 84 Q60 90 67 84" fill="none" stroke="#4A3531" stroke-width="3" stroke-linecap="round"/>
+                <ellipse cx="30" cy="94" rx="8" ry="6" fill="${paws}" stroke="#4A3531" stroke-width="3"/>
+                <ellipse cx="90" cy="94" rx="8" ry="6" fill="${paws}" stroke="#4A3531" stroke-width="3"/>
+            </svg>`;
+        }
+
+        function renderMoleBoard() {
+            const grid = document.getElementById('moleGrid');
+            grid.innerHTML = '';
+            assignRandomMoleColors();
+
+            for (let i = 0; i < 9; i++) {
+                const holeEl = document.createElement('div');
+                holeEl.className = 'mole-hole-container group';
+                holeEl.id = `hole-${i}`;
+                holeEl.onclick = () => handleMoleWhack(i);
+
+                holeEl.innerHTML = `
+                    <div class="hole-back"></div>
+                    <div class="mole-mask">
+                        <div id="mole-char-${i}" class="mole-character up" style="animation-delay: ${i * 0.14}s;">
+                            ${getMoleSVG('normal', '🎁', i)}
+                        </div>
+                    </div>
+                    <div class="hole-front-rim"></div>
+                `;
+                grid.appendChild(holeEl);
+            }
+        }
+
+        function spawnWhackEffects(holeIndex) {
+            const holeEl = document.getElementById(`hole-${holeIndex}`);
+            if (!holeEl) return;
+
+            const hammer = document.createElement('div');
+            hammer.className = 'hammer-fx';
+            hammer.innerHTML = `
+                <svg viewBox="0 0 80 80" class="w-full h-full drop-shadow-md">
+                    <rect x="35" y="34" width="10" height="40" rx="5" fill="#DDA15E" stroke="#4A3531" stroke-width="3"/>
+                    <rect x="14" y="12" width="52" height="26" rx="10" fill="#FF758F" stroke="#4A3531" stroke-width="3.5"/>
+                    <rect x="20" y="16" width="40" height="6" rx="3" fill="#FFB3C1"/>
+                </svg>
+            `;
+            holeEl.appendChild(hammer);
+
+            const poko = document.createElement('div');
+            poko.className = 'poko-badge bg-[#FFD166] border-2 border-[#4A3531] text-[#4A3531] font-cute font-bold text-xs sm:text-sm px-2.5 py-0.5 rounded-full shadow-xs';
+            poko.textContent = 'ป๊อก! 💥';
+            holeEl.appendChild(poko);
+
+            setTimeout(() => {
+                hammer.remove();
+                poko.remove();
+            }, 700);
+        }
+
+        function handleMoleWhack(holeIndex) {
+            if (currentSession.isLocked) return;
+
+            const remaining = currentSession.totalUses - currentSession.usedCount;
+            if (remaining <= 0) {
+                playSoundEffect('error');
+                return;
+            }
+
+            currentSession.isLocked = true;
+
+            // หักสิทธิ์ 1 ตัวต่อ 1 การทุบ
+            currentSession.usedCount += 1;
+            const codes = getCodes();
+            const idx = codes.findIndex(c => c.code === currentSession.code);
+            if (idx !== -1) {
+                codes[idx].usedCount = currentSession.usedCount;
+                codes[idx].redeemed = true;
+                saveCodes(codes);
+            }
+            updateRemainingDisplay();
+
+            // สุ่มรางวัลและบันทึกประวัติ
+            const prize = rollPrizeByProbability();
+            const nowStr = new Date().toLocaleString('th-TH');
+            const refId = `MG-${Math.floor(100000 + Math.random() * 900000)}`;
+
+            const logs = getLogs();
+            logs.unshift({
+                refId,
+                timestamp: nowStr,
+                playerName: currentSession.playerName,
+                code: currentSession.code,
+                prizeType: prize.type,
+                prizeTitle: prize.title
+            });
+            saveLogs(logs);
+
+            // ลำดับแอนิเมชัน: 1. โดนทุบตกใจ -> 2. มุดลงโพรงหยิบของ -> 3. โผล่ขึ้นมาชูรางวัล -> 4. เปิดป๊อปอัป
+            const moleEl = document.getElementById(`mole-char-${holeIndex}`);
+            playSoundEffect('bonk');
+            spawnWhackEffects(holeIndex);
+
+            if (moleEl) {
+                moleEl.classList.remove('up');
+                moleEl.innerHTML = getMoleSVG('bonked', '🎁', holeIndex);
+                moleEl.classList.add('bonked');
+            }
+
+            setTimeout(() => {
+                if (moleEl) {
+                    moleEl.classList.remove('bonked');
+                    moleEl.classList.add('hidden-down');
+                }
+            }, 420);
+
+            setTimeout(() => {
+                playSoundEffect('pop');
+                if (moleEl) {
+                    moleEl.innerHTML = getMoleSVG('prize', prize.icon, holeIndex);
+                    moleEl.classList.remove('hidden-down');
+                    moleEl.classList.add('holding-prize');
+                }
+            }, 950);
+
+            setTimeout(() => {
+                playSoundEffect('win');
+                showPrizeModal(prize, refId, nowStr);
+            }, 1550);
+        }
+
+        /**
+         * ============================================================================
+         * 6. ระบบสุ่มรางวัลตามอัตราส่วนที่แอดมินตั้งค่า (ค่าเริ่มต้น: 25% อาหารฟรี / 75% ลด 50%)
+         * ============================================================================
+         */
+        function getSecureRandomPercentage() {
+            if (window.crypto && window.crypto.getRandomValues) {
+                const array = new Uint32Array(1);
+                window.crypto.getRandomValues(array);
+                return (array[0] / (0xFFFFFFFF + 1)) * 100;
+            }
+            return Math.random() * 100;
+        }
+
+        function rollPrizeByProbability() {
+            const { freeFoodRate } = getPrizeRates();
+            const roll = getSecureRandomPercentage();
+
+            if (roll < freeFoodRate) {
+                return {
+                    type: 'FREE_FOOD',
+                    title: 'แจกอาหารฟรี!',
+                    subtitle: 'คูปองรับประทานอาหารฟรี 1 เมนูที่ร่วมรายการ',
+                    icon: '🍱'
+                };
+            }
+
+            return {
+                type: 'DISCOUNT_50',
+                title: 'ส่วนลด 50%!',
+                subtitle: 'คูปองส่วนลดค่าอาหาร 50% สำหรับบิลถัดไปหรือเมนูที่ร่วมรายการ',
+                icon: '🎟️'
+            };
+        }
+
+        /**
+         * ============================================================================
+         * 7. หน้าต่างแสดงผลรางวัล (Prize Modal)
+         * ============================================================================
+         */
+        function showPrizeModal(prize, refId, timestamp) {
+            document.getElementById('prizeVisualIcon').textContent = prize.icon;
+            document.getElementById('prizeTitleText').textContent = prize.title;
+            document.getElementById('prizeSubText').textContent = prize.subtitle;
+
+            document.getElementById('receiptPlayerName').textContent = currentSession.playerName;
+            document.getElementById('receiptCodeUsed').textContent = currentSession.code;
+            document.getElementById('receiptRefId').textContent = refId;
+            document.getElementById('receiptTimestamp').textContent = timestamp;
+
+            const remaining = currentSession.totalUses - currentSession.usedCount;
+            const nextBtn = document.getElementById('playNextBtn');
+            if (remaining > 0) {
+                nextBtn.classList.remove('hidden');
+                nextBtn.textContent = `🔨 ทุบต่อ (เหลืออีก ${remaining} สิทธิ์)`;
+            } else {
+                nextBtn.classList.add('hidden');
+            }
+
+            const modal = document.getElementById('prizeModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function continueNextPlay() {
+            playSoundEffect('click');
+            const modal = document.getElementById('prizeModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            currentSession.isLocked = false;
+            renderMoleBoard();
+        }
+
+        function finishAndReturn() {
+            playSoundEffect('click');
+            const modal = document.getElementById('prizeModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            currentSession.isLocked = false;
+            exitToEntry();
+        }
+
+        /**
+         * ============================================================================
+         * 8. ระบบหลังบ้านแอดมิน (Admin Panel & Code Management)
+         * ============================================================================
+         */
+        function openAdminModal() {
+            playSoundEffect('click');
+            const modal = document.getElementById('adminModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (isAdminAuthenticated) {
+                showAdminDashboard();
+            } else {
+                document.getElementById('adminLoginSection').classList.remove('hidden');
+                document.getElementById('adminDashboardSection').classList.add('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('adminLoginError').classList.add('hidden');
+            }
+        }
+
+        function closeAdminModal() {
+            playSoundEffect('click');
+            const modal = document.getElementById('adminModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const pw = document.getElementById('adminPasswordInput').value.trim();
+            if (pw === ADMIN_PASSWORD) {
+                isAdminAuthenticated = true;
+                playSoundEffect('win');
+                showAdminDashboard();
+            } else {
+                document.getElementById('adminLoginError').classList.remove('hidden');
+                playSoundEffect('error');
+            }
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('adminLoginSection').classList.add('hidden');
+            document.getElementById('adminDashboardSection').classList.remove('hidden');
+            generateRandom4DigitCode();
+            syncAdminRateControls();
+            renderAdminTables();
+        }
+
+        function syncAdminRateControls() {
+            const { freeFoodRate, discountRate } = getPrizeRates();
+            const slider = document.getElementById('freeFoodRateSlider');
+            if (slider) slider.value = freeFoodRate;
+            document.getElementById('freeFoodRateLabel').textContent = freeFoodRate;
+            document.getElementById('discountRateLabel').textContent = discountRate;
+            const summary = document.getElementById('adminRateSummaryText');
+            if (summary) {
+                summary.textContent = `เรทปัจจุบัน: อาหารฟรี ${freeFoodRate}% | ส่วนลด 50% (${discountRate}%)`;
+            }
+        }
+
+        function previewPrizeRate(val) {
+            const freeFood = parseInt(val, 10) || 0;
+            const discount = 100 - freeFood;
+            document.getElementById('freeFoodRateLabel').textContent = freeFood;
+            document.getElementById('discountRateLabel').textContent = discount;
+        }
+
+        function savePrizeRateSettings() {
+            const slider = document.getElementById('freeFoodRateSlider');
+            const freeFood = Math.min(100, Math.max(0, parseInt(slider.value, 10) || 0));
+            localStorage.setItem(STORAGE_KEYS.RATES, JSON.stringify({ freeFoodRate: freeFood }));
+            syncAdminRateControls();
+            playSoundEffect('pop');
+            showAdminToast(`💾 บันทึกเรทรางวัลเรียบร้อย (อาหารฟรี ${freeFood}% / ส่วนลด 50% ${100 - freeFood}%)`);
+        }
+
+        function resetDefaultRates() {
+            localStorage.setItem(STORAGE_KEYS.RATES, JSON.stringify({ freeFoodRate: DEFAULT_FREE_FOOD_RATE }));
+            syncAdminRateControls();
+            playSoundEffect('click');
+            showAdminToast(`🔄 รีเซ็ตเรทรางวัลเป็นค่าเริ่มต้น (อาหารฟรี 25% / ส่วนลด 50% 75%) แล้ว`);
+        }
+
+        function generateRandom4DigitCode() {
+            const codes = getCodes();
+            let candidate = '';
+            let attempts = 0;
+            do {
+                candidate = String(Math.floor(1000 + Math.random() * 9000));
+                attempts++;
+            } while (codes.some(c => c.code === candidate) && attempts < 50);
+
+            document.getElementById('newCodeInput').value = candidate;
+        }
+
+        function showAdminToast(message) {
+            const toast = document.getElementById('adminToastMsg');
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            clearTimeout(window._adminToastTimer);
+            window._adminToastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        function createNewCode() {
+            const codeVal = document.getElementById('newCodeInput').value.trim();
+            const usesVal = parseInt(document.getElementById('newCodeUsesInput').value, 10);
+
+            if (!/^\d{4}$/.test(codeVal)) {
+                playSoundEffect('error');
+                showAdminToast('⚠️ กรุณาระบุรหัสโค้ดเป็นตัวเลข 4 หลักเท่านั้น');
+                return;
+            }
+            if (isNaN(usesVal) || usesVal < 1 || usesVal > 99) {
+                playSoundEffect('error');
+                showAdminToast('⚠️ กรุณาระบุจำนวนสิทธิ์ระหว่าง 1 - 99 ครั้ง');
+                return;
+            }
+
+            const codes = getCodes();
+            if (codes.some(c => c.code === codeVal)) {
+                playSoundEffect('error');
+                showAdminToast(`⚠️ รหัสโค้ด ${codeVal} มีอยู่ในระบบแล้ว กรุณาสุ่มรหัสใหม่`);
+                return;
+            }
+
+            codes.unshift({
+                code: codeVal,
+                maxUses: usesVal,
+                usedCount: 0,
+                redeemed: false,
+                redeemedBy: '',
+                createdAt: new Date().toLocaleString('th-TH')
+            });
+            saveCodes(codes);
+
+            playSoundEffect('pop');
+            showAdminToast(`✅ สร้างโค้ด ${codeVal} (${usesVal} สิทธิ์ • ใช้ได้ 1 ครั้ง) เรียบร้อยแล้ว!`);
+            generateRandom4DigitCode();
+            renderAdminTables();
+        }
+
+        function copyCodeToClipboard(codeStr) {
+            const tempInput = document.createElement('input');
+            tempInput.value = codeStr;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            playSoundEffect('click');
+            showAdminToast(`📋 คัดลอกรหัสโค้ด "${codeStr}" ลงคลิปบอร์ดแล้ว!`);
+        }
+
+        function deleteCode(codeStr) {
+            const codes = getCodes().filter(c => c.code !== codeStr);
+            saveCodes(codes);
+            playSoundEffect('click');
+            showAdminToast(`🗑️ ลบรหัสโค้ด ${codeStr} เรียบร้อยแล้ว`);
+            renderAdminTables();
+        }
+
+        function clearWinnerLogs() {
+            saveLogs([]);
+            playSoundEffect('click');
+            showAdminToast('🗑️ ล้างประวัติผู้ได้รับรางวัลทั้งหมดแล้ว');
+            renderAdminTables();
+        }
+
+        function switchAdminTab(tab) {
+            playSoundEffect('click');
+            const codesTab = document.getElementById('adminCodesTab');
+            const logsTab = document.getElementById('adminLogsTab');
+            const tabCodesBtn = document.getElementById('tabCodesBtn');
+            const tabLogsBtn = document.getElementById('tabLogsBtn');
+
+            if (tab === 'codes') {
+                codesTab.classList.remove('hidden');
+                logsTab.classList.add('hidden');
+                tabCodesBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-sm bg-[#4A3531] text-white transition';
+                tabLogsBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-sm bg-[#F8EDEB] text-[#4A3531] hover:bg-[#FCD5CE] transition';
+            } else {
+                codesTab.classList.add('hidden');
+                logsTab.classList.remove('hidden');
+                tabLogsBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-sm bg-[#4A3531] text-white transition';
+                tabCodesBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-sm bg-[#F8EDEB] text-[#4A3531] hover:bg-[#FCD5CE] transition';
+            }
+        }
+
+        function renderAdminTables() {
+            const codes = getCodes();
+            const logs = getLogs();
+
+            document.getElementById('codeCountBadge').textContent = codes.length;
+            document.getElementById('logCountBadge').textContent = logs.length;
+
+            // ตารางรายการโค้ด
+            const codesBody = document.getElementById('adminCodesTableBody');
+            if (codes.length === 0) {
+                codesBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-[#8C6D65]">ยังไม่มีโค้ดในระบบ กดสร้างโค้ดด้านบนได้เลย</td>
+                    </tr>`;
+            } else {
+                codesBody.innerHTML = codes.map(item => {
+                    const isUsed = item.redeemed === true || item.usedCount >= item.maxUses;
+                    const statusHtml = isUsed
+                        ? `<span class="inline-block bg-[#FFE5EC] text-[#D9385A] font-bold text-xs px-2.5 py-1 rounded-full">ถูกใช้แล้ว${item.redeemedBy ? ` (${item.redeemedBy})` : ''}</span>`
+                        : `<span class="inline-block bg-[#D8F3DC] text-[#1B4332] font-bold text-xs px-2.5 py-1 rounded-full">พร้อมใช้งาน</span>`;
+
+                    return `
+                        <tr class="hover:bg-[#FFF8FA]">
+                            <td class="py-2.5 px-3 font-mono font-bold text-base text-[#D9385A]">${item.code}</td>
+                            <td class="py-2.5 px-3 text-center font-bold">${item.usedCount} / ${item.maxUses}</td>
+                            <td class="py-2.5 px-3 text-center">${statusHtml}</td>
+                            <td class="py-2.5 px-3 text-right space-x-1">
+                                <button onclick="copyCodeToClipboard('${item.code}')"
+                                    class="bg-[#FFF3B0] hover:bg-[#FFE66D] border border-[#4A3531] text-[#4A3531] text-xs font-bold px-2.5 py-1 rounded-lg">
+                                    คัดลอก
+                                </button>
+                                <button onclick="deleteCode('${item.code}')"
+                                    class="bg-[#FFE5EC] hover:bg-[#FFCCD5] border border-[#4A3531] text-[#D9385A] text-xs font-bold px-2.5 py-1 rounded-lg">
+                                    ลบ
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // ตารางประวัติรางวัล
+            const logsBody = document.getElementById('adminLogsTableBody');
+            if (logs.length === 0) {
+                logsBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="py-6 text-center text-[#8C6D65]">ยังไม่มีประวัติผู้ได้รับรางวัล</td>
+                    </tr>`;
+            } else {
+                logsBody.innerHTML = logs.map(log => {
+                    const badgeColor = log.prizeType === 'FREE_FOOD'
+                        ? 'bg-[#FFD166] text-[#4A3531]'
+                        : 'bg-[#BDE0FE] text-[#4A3531]';
+                    return `
+                        <tr class="hover:bg-[#F8FAF9]">
+                            <td class="py-2.5 px-3 text-xs text-[#7D5A50]">${log.timestamp}</td>
+                            <td class="py-2.5 px-3 font-bold text-[#4A3531]">${log.playerName}</td>
+                            <td class="py-2.5 px-3 text-center font-mono font-bold text-[#D9385A]">${log.code}</td>
+                            <td class="py-2.5 px-3">
+                                <span class="inline-block ${badgeColor} border border-[#4A3531] text-xs font-bold px-2.5 py-0.5 rounded-full">
+                                    ${log.prizeTitle}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // เริ่มต้นทำงานเมื่อโหลดหน้าเว็บเสร็จสมบูรณ์
+        window.onload = function () {
+            initStorage();
+            createSakuraPetals();
+        };
+    </script>
+</body>
+</html>

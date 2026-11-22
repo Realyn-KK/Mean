@@ -1,0 +1,306 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Prompt', sans-serif;
+    background: linear-gradient(180deg, #FFE8F0 0%, #FFF6E5 55%, #D9F5D6 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: #4A3531;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.font-cute {
+  font-family: 'Mali', cursive, sans-serif;
+}
+
+.border-3 {
+  border-width: 3px;
+}
+
+.jp-pattern {
+  background-image:
+    radial-gradient(#FF9EBB 1.5px, transparent 1.5px),
+    radial-gradient(#FFD166 1.5px, #FFF9F2 1.5px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+}
+
+.kawaii-card {
+  background: #FFFFFF;
+  border: 4px solid #4A3531;
+  box-shadow: 0 8px 0 #4A3531;
+  border-radius: 28px;
+}
+
+.kawaii-btn {
+  border: 3px solid #4A3531;
+  box-shadow: 0 5px 0 #4A3531;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.15s ease;
+}
+
+.kawaii-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #4A3531;
+}
+
+.kawaii-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #4A3531;
+}
+
+.kawaii-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes sakuraFall {
+  0% {
+    transform: translateY(-10vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(105vh) translateX(45px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.sakura-petal {
+  position: fixed;
+  top: -10%;
+  pointer-events: none;
+  z-index: 1;
+  animation: sakuraFall linear infinite;
+}
+
+@keyframes lanternSway {
+  0%, 100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.lantern-sway {
+  transform-origin: top center;
+  animation: lanternSway 3.5s ease-in-out infinite;
+}
+
+.mole-hole-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.05;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.mole-mask {
+  position: relative;
+  width: 88%;
+  height: 82%;
+  overflow: hidden;
+  border-bottom-left-radius: 50% 24%;
+  border-bottom-right-radius: 50% 24%;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.mole-character {
+  width: 86%;
+  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(105%);
+  transform-origin: bottom center;
+}
+
+.mole-character.up {
+  transform: translateY(6%);
+  animation: moleIdle 1.8s ease-in-out infinite alternate;
+}
+
+.mole-character.hidden-down {
+  transform: translateY(110%) !important;
+  animation: none !important;
+  transition: transform 0.35s cubic-bezier(0.55, 0.085, 0.68, 0.53);
+}
+
+.mole-character.bonked {
+  transform: translateY(16%) scale(1.08, 0.85) !important;
+  animation: bonkShake 0.35s ease-in-out;
+}
+
+.mole-character.holding-prize {
+  transform: translateY(2%) !important;
+  animation: prizeBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes moleIdle {
+  0% {
+    transform: translateY(7%) rotate(-1.5deg);
+  }
+  100% {
+    transform: translateY(3%) rotate(1.5deg);
+  }
+}
+
+@keyframes bonkShake {
+  0%, 100% {
+    transform: translateY(16%) scale(1.08, 0.85) rotate(0deg);
+  }
+  25% {
+    transform: translateY(16%) scale(1.1, 0.82) rotate(-8deg);
+  }
+  75% {
+    transform: translateY(16%) scale(1.1, 0.82) rotate(8deg);
+  }
+}
+
+@keyframes prizeBounce {
+  0% {
+    transform: translateY(90%) scale(0.8);
+  }
+  65% {
+    transform: translateY(-4%) scale(1.05);
+  }
+  100% {
+    transform: translateY(2%) scale(1);
+  }
+}
+
+.hole-back {
+  position: absolute;
+  bottom: 4%;
+  width: 88%;
+  height: 28%;
+  background: #3B231E;
+  border-radius: 50%;
+  border: 3px solid #2A1713;
+  z-index: 5;
+  box-shadow: inset 0 8px 12px rgba(0, 0, 0, 0.65);
+}
+
+.hole-front-rim {
+  position: absolute;
+  bottom: 1%;
+  width: 94%;
+  height: 22%;
+  background: linear-gradient(180deg, #9C6644 0%, #7F4F24 100%);
+  border: 3px solid #4A3531;
+  border-radius: 50%;
+  z-index: 20;
+  pointer-events: none;
+  box-shadow: 0 4px 0 #4A3531;
+}
+
+.hammer-fx {
+  position: absolute;
+  top: -12%;
+  right: -8%;
+  width: 68px;
+  height: 68px;
+  z-index: 30;
+  pointer-events: none;
+  transform-origin: bottom right;
+  animation: hammerSmash 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes hammerSmash {
+  0% {
+    transform: rotate(45deg) scale(0.7);
+    opacity: 0;
+  }
+  30% {
+    transform: rotate(-35deg) scale(1.15);
+    opacity: 1;
+  }
+  70% {
+    transform: rotate(-25deg) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(10deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes popText {
+  0% {
+    transform: translate(-50%, 0) scale(0.4);
+    opacity: 0;
+  }
+  40% {
+    transform: translate(-50%, -22px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -38px) scale(1);
+    opacity: 0;
+  }
+}
+
+.poko-badge {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  z-index: 35;
+  pointer-events: none;
+  animation: popText 0.65s ease-out forwards;
+}
+
+@keyframes modalBounceIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-pop {
+  animation: modalBounceIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFF1F5;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FF8FAB;
+  border-radius: 10px;
+  border: 2px solid #FFF1F5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sakura-petal,
+  .lantern-sway,
+  .mole-character.up {
+    animation: none;
+  }
+}

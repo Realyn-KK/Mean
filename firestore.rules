@@ -1,0 +1,207 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidCodeId(codeId) {
+      return codeId is string && codeId.size() == 4 && codeId.matches('^[0-9]{4}$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (
+          request.auth.token.email == 'chat4kwankao@gmail.com' &&
+          request.auth.token.email_verified == true
+        ) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Helpers
+    function isValidCodeEntryCreate(data, codeId) {
+      return data.keys().hasAll(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'createdAt']) &&
+        data.keys().hasOnly(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'createdAt']) &&
+        data.code is string &&
+        data.code.size() == 4 &&
+        data.code.matches('^[0-9]{4}$') &&
+        data.code == codeId &&
+        data.maxUses is int &&
+        data.maxUses >= 1 &&
+        data.maxUses <= 99 &&
+        data.usedCount is int &&
+        data.usedCount == 0 &&
+        data.redeemed is bool &&
+        data.redeemed == false &&
+        data.redeemedBy is string &&
+        data.redeemedBy == '' &&
+        data.createdAt == request.time;
+    }
+
+    function isValidCodeEntryShape(data, codeId) {
+      return data.code is string &&
+        data.code.size() == 4 &&
+        data.code.matches('^[0-9]{4}$') &&
+        data.code == codeId &&
+        data.maxUses is int &&
+        data.maxUses >= 1 &&
+        data.maxUses <= 99 &&
+        data.usedCount is int &&
+        data.usedCount >= 0 &&
+        data.usedCount <= data.maxUses &&
+        data.redeemed is bool &&
+        data.redeemedBy is string &&
+        data.redeemedBy.size() <= 25 &&
+        data.createdAt is timestamp &&
+        (
+          (
+            data.redeemed == false &&
+            data.keys().hasAll(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'createdAt']) &&
+            data.keys().hasOnly(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'createdAt'])
+          ) ||
+          (
+            data.redeemed == true &&
+            data.keys().hasAll(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'redeemedAt', 'createdAt']) &&
+            data.keys().hasOnly(['code', 'maxUses', 'usedCount', 'redeemed', 'redeemedBy', 'redeemedAt', 'createdAt']) &&
+            data.redeemedBy.size() >= 1 &&
+            data.redeemedAt is timestamp
+          )
+        );
+    }
+
+    function isValidRedeemAction(codeId) {
+      return existing().redeemed == false &&
+        existing().usedCount == 0 &&
+        incoming().redeemed == true &&
+        incoming().usedCount == existing().usedCount &&
+        incoming().code == existing().code &&
+        incoming().code == codeId &&
+        incoming().maxUses == existing().maxUses &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().redeemedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['redeemed', 'redeemedBy', 'redeemedAt']);
+    }
+
+    function isValidWhackAction() {
+      return existing().redeemed == true &&
+        existing().usedCount < existing().maxUses &&
+        incoming().usedCount == existing().usedCount + 1 &&
+        incoming().code == existing().code &&
+        incoming().maxUses == existing().maxUses &&
+        incoming().redeemed == existing().redeemed &&
+        incoming().redeemedBy == existing().redeemedBy &&
+        incoming().redeemedAt == existing().redeemedAt &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['usedCount']);
+    }
+
+    function isValidWinnerLog(data) {
+      return data.keys().hasAll(['refId', 'playerName', 'code', 'prizeType', 'prizeTitle', 'createdAt']) &&
+        data.keys().hasOnly(['refId', 'playerName', 'code', 'prizeType', 'prizeTitle', 'createdAt']) &&
+        data.refId is string &&
+        data.refId.size() == 9 &&
+        data.refId.matches('^MG-[0-9]{6}$') &&
+        data.playerName is string &&
+        data.playerName.size() >= 1 &&
+        data.playerName.size() <= 25 &&
+        data.code is string &&
+        data.code.size() == 4 &&
+        data.code.matches('^[0-9]{4}$') &&
+        data.prizeType is string &&
+        data.prizeType in ['FREE_FOOD', 'DISCOUNT_50'] &&
+        data.prizeTitle is string &&
+        data.prizeTitle.size() >= 1 &&
+        data.prizeTitle.size() <= 60 &&
+        data.createdAt == request.time;
+    }
+
+    function isValidAtomicPrizeLog(data) {
+      return exists(/databases/$(database)/documents/codes/$(data.code)) &&
+        get(/databases/$(database)/documents/codes/$(data.code)).data.redeemed == true &&
+        get(/databases/$(database)/documents/codes/$(data.code)).data.redeemedBy == data.playerName &&
+        get(/databases/$(database)/documents/codes/$(data.code)).data.usedCount < get(/databases/$(database)/documents/codes/$(data.code)).data.maxUses &&
+        getAfter(/databases/$(database)/documents/codes/$(data.code)).data.usedCount == get(/databases/$(database)/documents/codes/$(data.code)).data.usedCount + 1;
+    }
+
+    function isValidPrizeSettings(data) {
+      return data.keys().hasAll(['freeFoodRate', 'updatedAt']) &&
+        data.keys().hasOnly(['freeFoodRate', 'updatedAt']) &&
+        data.freeFoodRate is int &&
+        data.freeFoodRate >= 0 &&
+        data.freeFoodRate <= 100 &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['email', 'role', 'createdAt']) &&
+        data.email is string &&
+        data.email.size() >= 3 &&
+        data.email.size() <= 120 &&
+        data.role is string &&
+        data.role == 'admin' &&
+        data.createdAt == request.time;
+    }
+
+    // Collection: /codes/{codeId}
+    match /codes/{codeId} {
+      allow get: if isValidCodeId(codeId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidCodeId(codeId) && isValidCodeEntryCreate(incoming(), codeId);
+      allow update: if isValidCodeId(codeId) && isValidCodeEntryShape(incoming(), codeId) && (
+        isAdmin() ||
+        isValidRedeemAction(codeId) ||
+        isValidWhackAction()
+      );
+      allow delete: if isAdmin() && isValidCodeId(codeId);
+    }
+
+    // Collection: /logs/{logId}
+    match /logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(logId) && isValidWinnerLog(incoming()) && (
+        isAdmin() ||
+        isValidAtomicPrizeLog(incoming())
+      );
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(logId);
+    }
+
+    // Collection: /settings/{settingId}
+    match /settings/{settingId} {
+      allow get: if settingId == 'prizeRates';
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && settingId == 'prizeRates' && isValidPrizeSettings(incoming());
+      allow delete: if false;
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminUser(incoming());
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(adminId);
+    }
+  }
+}

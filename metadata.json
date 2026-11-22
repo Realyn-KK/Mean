@@ -1,0 +1,6 @@
+{
+  "name": "โมกุโมกุ! ทุบตุ่นนำโชค (Mogu-Mogu Matsuri)",
+  "description": "เกมทุบตุ่นลุ้นรางวัลเทศกาลญี่ปุ่น พร้อมระบบรหัสปลดล็อก 4 หลักและหน้าจัดการแอดมิน",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

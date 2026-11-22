@@ -1,0 +1,154 @@
+{
+  "entities": {
+    "CodeEntry": {
+      "title": "CodeEntry",
+      "description": "A 4-digit single-use unlock code granting a fixed number of mole-whack plays.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "4-digit numeric unlock code matching the document ID.",
+          "minLength": 4,
+          "maxLength": 4,
+          "pattern": "^[0-9]{4}$"
+        },
+        "maxUses": {
+          "type": "integer",
+          "description": "Total number of plays allowed for this code (1 to 99)."
+        },
+        "usedCount": {
+          "type": "integer",
+          "description": "Number of plays consumed so far."
+        },
+        "redeemed": {
+          "type": "boolean",
+          "description": "Whether the code has been claimed by a player."
+        },
+        "redeemedBy": {
+          "type": "string",
+          "description": "Nickname of the player who claimed the code.",
+          "maxLength": 25
+        },
+        "redeemedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the code was redeemed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the code was created by an admin."
+        }
+      },
+      "required": ["code", "maxUses", "usedCount", "redeemed", "redeemedBy", "createdAt"]
+    },
+    "WinnerLog": {
+      "title": "WinnerLog",
+      "description": "An immutable prize-win record created atomically when a player whacks a mole.",
+      "type": "object",
+      "properties": {
+        "refId": {
+          "type": "string",
+          "description": "Receipt reference ID shown to store staff.",
+          "minLength": 9,
+          "maxLength": 9,
+          "pattern": "^MG-[0-9]{6}$"
+        },
+        "playerName": {
+          "type": "string",
+          "description": "Nickname of the winning player.",
+          "minLength": 1,
+          "maxLength": 25
+        },
+        "code": {
+          "type": "string",
+          "description": "4-digit code used for this play.",
+          "minLength": 4,
+          "maxLength": 4,
+          "pattern": "^[0-9]{4}$"
+        },
+        "prizeType": {
+          "type": "string",
+          "description": "Internal prize category identifier.",
+          "enum": ["FREE_FOOD", "DISCOUNT_50"]
+        },
+        "prizeTitle": {
+          "type": "string",
+          "description": "Display title of the awarded prize.",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the prize was won."
+        }
+      },
+      "required": ["refId", "playerName", "code", "prizeType", "prizeTitle", "createdAt"]
+    },
+    "PrizeSettings": {
+      "title": "PrizeSettings",
+      "description": "Global prize probability settings managed by the store admin.",
+      "type": "object",
+      "properties": {
+        "freeFoodRate": {
+          "type": "integer",
+          "description": "Percentage chance (0-100) for FREE_FOOD; DISCOUNT_50 is 100 - freeFoodRate."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last rate update."
+        }
+      },
+      "required": ["freeFoodRate", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized admin user record.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/codes/{codeId}": {
+      "schema": {
+        "$ref": "#/entities/CodeEntry"
+      },
+      "description": "4-digit unlock codes keyed by the 4-digit code string."
+    },
+    "/logs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/WinnerLog"
+      },
+      "description": "Chronological prize-win logs."
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/PrizeSettings"
+      },
+      "description": "Application configuration documents (specifically prizeRates)."
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/AdminUser"
+      },
+      "description": "Allowlisted store administrator UIDs."
+    }
+  }
+}
