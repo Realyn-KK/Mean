@@ -49,6 +49,14 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminPinVerified, setIsAdminPinVerified] = useState(false);
 
+  useEffect(() => {
+    if (sessionStorage.getItem('mogumogu_admin_redirect_pending') === '1') {
+      sessionStorage.removeItem('mogumogu_admin_redirect_pending');
+      setIsAdminPinVerified(true);
+      setIsAdminOpen(true);
+    }
+  }, []);
+
   // Real-time subscription to global prize rates
   useEffect(() => {
     const unsubscribe = subscribePrizeRates(

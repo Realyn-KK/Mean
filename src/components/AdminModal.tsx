@@ -1,4 +1,11 @@
-import {onAuthStateChanged, signInWithPopup, signOut, type User} from 'firebase/auth';
+import {
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  type User,
+} from 'firebase/auth';
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import {auth, googleProvider} from '../firebase';
 import type {CodeEntry, PrizeRates, WinnerLog} from '../types/game';
@@ -41,7 +48,11 @@ export function AdminModal({
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isGoogleAdmin, setIsGoogleAdmin] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [authErrorMsg, setAuthErrorMsg] = useState<string | null>(null);
+  const [showRedirectFallback, setShowRedirectFallback] = useState(false);
+  const isInIframe =
+    typeof window !== 'undefined' && window.self !== window.top;
 
   const [codes, setCodes] = useState<CodeEntry[]>([]);
   const [logs, setLogs] = useState<WinnerLog[]>([]);
@@ -80,13 +91,55 @@ export function AdminModal({
     setFreeFoodRate(livePrizeRates.freeFoodRate);
   }, [livePrizeRates.freeFoodRate]);
 
+  const formatGoogleAuthError = (error: unknown): string => {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as {code?: unknown}).code ?? '')
+        : '';
+    const message = error instanceof Error ? error.message : String(error);
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+
+    switch (code) {
+      case 'auth/unauthorized-domain':
+        return `⚠️ โดเมน "${host}" ยังไม่ได้รับอนุญาตใน Firebase Authentication (กรุณาเพิ่มโดเมนนี้ใน Firebase Console > Authentication > Settings > Authorized domains)`;
+      case 'auth/popup-blocked':
+        setShowRedirectFallback(true);
+        return isInIframe
+          ? '⚠️ เบราว์เซอร์บล็อกป๊อปอัปภายในหน้าต่างตัวอย่าง กรุณากดเปิดเว็บในแท็บใหม่ด้านล่างเพื่อล็อกอิน Google'
+          : '⚠️ เบราว์เซอร์บล็อกหน้าต่างป๊อปอัป กรุณาอนุญาตป๊อปอัป หรือกดปุ่ม "เข้าสู่ระบบแบบเปิดเต็มหน้า" ด้านล่าง';
+      case 'auth/popup-closed-by-user':
+        setShowRedirectFallback(true);
+        return isInIframe
+          ? '⚠️ หน้าต่างล็อกอินถูกปิดลงก่อนสำเร็จ (มักเกิดจากข้อจำกัดป๊อปอัปในหน้าต่างตัวอย่าง) แนะนำให้เปิดเว็บในแท็บใหม่ด้านล่างแล้วลองอีกครั้ง'
+          : '⚠️ หน้าต่างล็อกอินถูกปิดก่อนทำรายการเสร็จสิ้น กรุณาลองใหม่อีกครั้ง';
+      case 'auth/cancelled-popup-request':
+        return '⚠️ มีคำขอล็อกอินซ้อนกัน กรุณารอสักครู่แล้วกดใหม่อีกครั้ง';
+      case 'auth/operation-not-allowed':
+        return '⚠️ ยังไม่ได้เปิดใช้งาน Google Sign-In ใน Firebase Console (Authentication > Sign-in method > Google)';
+      case 'auth/network-request-failed':
+        return '⚠️ เชื่อมต่อเครือข่ายไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่';
+      default:
+        setShowRedirectFallback(true);
+        return `⚠️ เข้าสู่ระบบ Google ไม่สำเร็จ (${code || 'unknown'}): ${message}`;
+    }
+  };
+
   useEffect(() => {
+    let mounted = true;
+    void getRedirectResult(auth).catch((error) => {
+      if (!mounted) return;
+      console.error('Google Redirect Error:', error);
+      setAuthErrorMsg(formatGoogleAuthError(error));
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!mounted) return;
       setFirebaseUser(user);
       setAuthErrorMsg(null);
       if (user) {
         setIsCheckingAccess(true);
         const ok = await verifyAdminAccess(user);
+        if (!mounted) return;
         setIsGoogleAdmin(ok);
         setIsCheckingAccess(false);
       } else {
@@ -95,7 +148,10 @@ export function AdminModal({
       }
       setAuthReady(true);
     });
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -184,25 +240,35 @@ export function AdminModal({
   };
 
   const handleGoogleSignIn = async () => {
+    if (isSigningIn) return;
     setAuthErrorMsg(null);
+    setIsSigningIn(true);
     onPlaySound('click');
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch {
+    } catch (error) {
+      console.error('Google SignIn Popup Error:', error);
       onPlaySound('error');
-      setAuthErrorMsg('⚠️ การเข้าสู่ระบบ Google ถูกยกเลิกหรือไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      setAuthErrorMsg(formatGoogleAuthError(error));
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
-  const handleSwitchGoogleAccount = async () => {
+  const handleGoogleRedirectSignIn = async () => {
+    if (isSigningIn) return;
     setAuthErrorMsg(null);
+    setIsSigningIn(true);
     onPlaySound('click');
     try {
-      await signOut(auth);
-      await signInWithPopup(auth, googleProvider);
-    } catch {
+      sessionStorage.setItem('mogumogu_admin_redirect_pending', '1');
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      sessionStorage.removeItem('mogumogu_admin_redirect_pending');
+      console.error('Google SignIn Redirect Error:', error);
       onPlaySound('error');
-      setAuthErrorMsg('⚠️ ไม่สามารถสลับบัญชี Google ได้ กรุณาลองใหม่อีกครั้ง');
+      setAuthErrorMsg(formatGoogleAuthError(error));
+      setIsSigningIn(false);
     }
   };
 
@@ -419,13 +485,42 @@ export function AdminModal({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => void (firebaseUser ? handleSwitchGoogleAccount() : handleGoogleSignIn())}
-              className="w-full kawaii-btn bg-[#4EA8DE] hover:bg-[#3A86FF] text-white font-cute font-bold py-3 px-4 rounded-2xl cursor-pointer"
-            >
-              {firebaseUser ? 'สลับบัญชี Google ผู้ดูแล' : 'เข้าสู่ระบบด้วย Google'}
-            </button>
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                disabled={isSigningIn}
+                onClick={() => void handleGoogleSignIn()}
+                className="w-full kawaii-btn bg-[#4EA8DE] hover:bg-[#3A86FF] text-white font-cute font-bold py-3 px-4 rounded-2xl cursor-pointer"
+              >
+                {isSigningIn
+                  ? 'กำลังเปิดหน้าต่าง Google...'
+                  : firebaseUser
+                    ? 'สลับบัญชี Google ผู้ดูแล'
+                    : 'เข้าสู่ระบบด้วย Google'}
+              </button>
+
+              {showRedirectFallback && isInIframe && typeof window !== 'undefined' && (
+                <a
+                  href={window.location.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full kawaii-btn bg-[#FFF3B0] hover:bg-[#FFE66D] text-[#4A3531] font-cute font-bold py-2.5 px-4 rounded-2xl text-sm text-center cursor-pointer"
+                >
+                  ↗️ เปิดเว็บในแท็บใหม่เพื่อล็อกอิน Google
+                </a>
+              )}
+
+              {showRedirectFallback && !isInIframe && (
+                <button
+                  type="button"
+                  disabled={isSigningIn}
+                  onClick={() => void handleGoogleRedirectSignIn()}
+                  className="w-full kawaii-btn bg-[#FFF3B0] hover:bg-[#FFE66D] text-[#4A3531] font-cute font-bold py-2.5 px-4 rounded-2xl text-sm cursor-pointer"
+                >
+                  เข้าสู่ระบบแบบเปิดเต็มหน้า (กรณีป๊อปอัปถูกบล็อก)
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div id="adminDashboardSection" className="flex-1 overflow-y-auto pt-4 space-y-5 pr-1">

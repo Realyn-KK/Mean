@@ -228,7 +228,10 @@ export async function consumePlayAndRecordPrize(
 
 export async function verifyAdminAccess(user: User | null): Promise<boolean> {
   if (!user) return false;
-  if (user.email === BOOTSTRAPPED_ADMIN_EMAIL && user.emailVerified) {
+  if (
+    user.email?.toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL.toLowerCase() &&
+    user.emailVerified
+  ) {
     return true;
   }
   try {
