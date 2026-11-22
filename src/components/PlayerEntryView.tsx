@@ -1,4 +1,4 @@
-import {useRef, useState, type FormEvent} from 'react';
+import {useState, type FormEvent} from 'react';
 import {WelcomeMoleSvg} from './MoleSvg';
 import type {SoundEffectType} from '../utils/sound';
 
@@ -12,16 +12,6 @@ export function PlayerEntryView({onStartGame, onPlaySound}: PlayerEntryViewProps
   const [unlockCode, setUnlockCode] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFillDemoCode = (code: string) => {
-    setUnlockCode(code);
-    setErrorMessage(null);
-    if (!playerName.trim()) {
-      nameInputRef.current?.focus();
-    }
-    onPlaySound('click');
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,7 +85,6 @@ export function PlayerEntryView({onStartGame, onPlaySound}: PlayerEntryViewProps
               🌸 ชื่อเล่นของคุณ <span className="text-[#E63946]">*</span>
             </label>
             <input
-              ref={nameInputRef}
               type="text"
               id="playerNameInput"
               maxLength={25}
@@ -128,7 +117,7 @@ export function PlayerEntryView({onStartGame, onPlaySound}: PlayerEntryViewProps
                 setUnlockCode(digitsOnly);
                 if (errorMessage) setErrorMessage(null);
               }}
-              placeholder="เช่น 8888"
+              placeholder="0000"
               className="w-full px-4 py-3 rounded-2xl border-3 border-[#4A3531] bg-[#FFFDF9] text-center text-2xl tracking-[0.4em] font-bold text-[#D9385A] tabular-nums focus:outline-none focus:ring-4 focus:ring-[#FFCCD5] transition disabled:opacity-60"
               required
             />
@@ -153,21 +142,6 @@ export function PlayerEntryView({onStartGame, onPlaySound}: PlayerEntryViewProps
             <span>{isSubmitting ? 'กำลังตรวจสอบรหัสออนไลน์...' : 'ปลดล็อกเข้าสู่สนามทุบตุ่น!'}</span>
           </button>
         </form>
-
-        <div className="mt-5 pt-4 border-t-2 border-dashed border-[#FFD6E0] text-center">
-          <p className="text-xs text-[#8C6D65]">
-            💡 ทดลองเล่นทันทีใช้โค้ดตัวอย่าง:{' '}
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleFillDemoCode('8888')}
-              className="font-bold text-[#D9385A] underline hover:text-[#A4133C] cursor-pointer"
-            >
-              8888
-            </button>{' '}
-            (1 โค้ดใช้ได้ 1 ครั้ง • สร้างใหม่ได้ในเมนูแอดมิน)
-          </p>
-        </div>
       </div>
     </section>
   );

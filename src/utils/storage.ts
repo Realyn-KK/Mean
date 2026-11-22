@@ -12,8 +12,8 @@ export const STORAGE_KEYS = {
   RATES: 'mogumogu_jp_rates_v1',
 } as const;
 
-export const DEFAULT_FREE_FOOD_RATE = 25;
-export const ADMIN_PASSWORD = '2323';
+export const DEFAULT_FREE_FOOD_RATE = 40;
+export const ADMIN_PASSWORD = '2536';
 
 export const MOLE_COLOR_PALETTES: MolePalette[] = [
   { name: 'Sakura Pink', body: '#FF8FAB', belly: '#FFE5EC', band: '#FFFFFF', dot: '#E63946', paws: '#FFB3C6' },
@@ -34,17 +34,7 @@ export function shuffleMolePalettes(): MolePalette[] {
 export function initStorage(): void {
   try {
     if (!localStorage.getItem(STORAGE_KEYS.CODES)) {
-      const initialCodes: CodeEntry[] = [
-        {
-          code: '8888',
-          maxUses: 3,
-          usedCount: 0,
-          redeemed: false,
-          redeemedBy: '',
-          createdAt: new Date().toLocaleString('th-TH'),
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.CODES, JSON.stringify(initialCodes));
+      localStorage.setItem(STORAGE_KEYS.CODES, JSON.stringify([]));
     }
 
     if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {

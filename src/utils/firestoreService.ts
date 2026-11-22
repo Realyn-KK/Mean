@@ -248,18 +248,6 @@ export async function ensureInitialFirestoreDefaults(): Promise<void> {
         freeFoodRate: DEFAULT_FREE_FOOD_RATE,
         updatedAt: serverTimestamp(),
       });
-
-      const existingCodesSnap = await getDocs(collection(db, 'codes'));
-      if (existingCodesSnap.empty) {
-        await setDoc(doc(db, 'codes', '8888'), {
-          code: '8888',
-          maxUses: 3,
-          usedCount: 0,
-          redeemed: false,
-          redeemedBy: '',
-          createdAt: serverTimestamp(),
-        });
-      }
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'settings/prizeRates');

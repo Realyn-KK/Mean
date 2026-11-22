@@ -316,7 +316,7 @@ export function AdminModal({
       await savePrizeRateInFirestore(DEFAULT_FREE_FOOD_RATE);
       setFreeFoodRate(DEFAULT_FREE_FOOD_RATE);
       onPlaySound('click');
-      showToast('🔄 รีเซ็ตเรทรางวัลเป็นค่าเริ่มต้น (อาหารฟรี 25% / ส่วนลด 50% 75%) แล้ว');
+      showToast('🔄 รีเซ็ตเรทรางวัลเป็นค่าเริ่มต้น (อาหารฟรี 40% / ส่วนลด 50% 60%) แล้ว');
     } catch {
       onPlaySound('error');
       showToast('⚠️ รีเซ็ตเรทรางวัลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
@@ -532,7 +532,7 @@ export function AdminModal({
                   onClick={() => void handleResetRates()}
                   className="text-xs font-bold text-[#D9385A] hover:underline cursor-pointer"
                 >
-                  รีเซ็ตค่าเริ่มต้น (25% / 75%)
+                  รีเซ็ตค่าเริ่มต้น (40% / 60%)
                 </button>
               </div>
 
